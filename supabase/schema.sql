@@ -1,0 +1,79 @@
+-- ReadingBuddy schema
+-- Run this in the Supabase SQL editor (Dashboard -> SQL Editor -> New query -> paste -> Run)
+
+-- ============ profiles ============
+create table if not exists public.profiles (
+  id uuid primary key references auth.users (id) on delete cascade,
+  username text,
+  lexile int,                        -- estimated lexile number, e.g. 650
+  band text,                         -- Sprout | Explorer | Voyager | Champion
+  diagnostic_done boolean default false,
+  settings jsonb default '{}'::jsonb, -- accessibility prefs
+  created_at timestamptz default now()
+);
+
+alter table public.profiles enable row level security;
+
+create policy "read own profile"   on public.profiles for select using (auth.uid() = id);
+create policy "insert own profile" on public.profiles for insert with check (auth.uid() = id);
+create policy "update own profile" on public.profiles for update using (auth.uid() = id);
+
+-- auto-create a profile row when a user signs up
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, username)
+  values (new.id, coalesce(new.raw_user_meta_data ->> 'username', split_part(new.email, '@', 1)));
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- ============ lesson progress ============
+create table if not exists public.lesson_progress (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  lesson_id text not null,
+  completed_at timestamptz default now(),
+  unique (user_id, lesson_id)
+);
+
+alter table public.lesson_progress enable row level security;
+create policy "own progress select" on public.lesson_progress for select using (auth.uid() = user_id);
+create policy "own progress insert" on public.lesson_progress for insert with check (auth.uid() = user_id);
+
+-- ============ quiz results ============
+create table if not exists public.quiz_results (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  lesson_id text,                    -- null for the diagnostic
+  kind text default 'lesson',        -- 'lesson' | 'diagnostic'
+  score int not null,
+  total int not null,
+  created_at timestamptz default now()
+);
+
+alter table public.quiz_results enable row level security;
+create policy "own results select" on public.quiz_results for select using (auth.uid() = user_id);
+create policy "own results insert" on public.quiz_results for insert with check (auth.uid() = user_id);
+
+-- ============ reading log ============
+create table if not exists public.reading_log (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  gutenberg_id int,
+  title text,
+  author text,
+  created_at timestamptz default now()
+);
+
+alter table public.reading_log enable row level security;
+create policy "own log select" on public.reading_log for select using (auth.uid() = user_id);
+create policy "own log insert" on public.reading_log for insert with check (auth.uid() = user_id);
