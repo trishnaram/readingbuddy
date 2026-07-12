@@ -26,8 +26,8 @@ export default function Login() {
           options: { data: { username: username || email.split('@')[0] } },
         })
         if (error) throw error
-        setNotice('Account created! If email confirmation is on, check your inbox — otherwise you are signed in.')
-        navigate('/diagnostic')
+        alert(`Almost there! 📬 We sent a confirmation link to ${email}. Click it, then sign in!`)
+        setMode('signin')
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
