@@ -4,9 +4,11 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { lessonsForBand, LESSONS } from '../data/lessons'
 import { bandByName, BANDS } from '../lib/lexile'
+import { useT } from '../context/TranslationContext'
 import Buddy from '../components/Buddy'
 
 export default function Lessons() {
+  const t = useT()
   const { user, profile } = useAuth()
   const [completed, setCompleted] = useState(new Set())
   const [showAll, setShowAll] = useState(false)
@@ -35,11 +37,11 @@ export default function Lessons() {
       <div className={`card card-flat anim-wiggle ${completed.has(lesson.id) ? 'card-lime' : ''}`} style={{ opacity: locked ? 0.55 : 1, height: '100%' }}>
         <div className="row spread">
           <span style={{ fontSize: '2rem' }}>{lesson.emoji}</span>
-          {completed.has(lesson.id) && <span className="chip chip-lime">✓ Done!</span>}
-          {locked && <span className="chip">🔒 {lesson.band}</span>}
+          {completed.has(lesson.id) && <span className="chip chip-lime">{t('✓ Done!')}</span>}
+          {locked && <span className="chip">🔒 {t(lesson.band)}</span>}
         </div>
-        <h3 style={{ marginTop: 10 }}>{lesson.skill}</h3>
-        <p className="muted" style={{ margin: 0 }}>{lesson.title}</p>
+        <h3 style={{ marginTop: 10 }}>{t(lesson.skill)}</h3>
+        <p className="muted" style={{ margin: 0 }}>{t(lesson.title)}</p>
       </div>
     </Link>
   )
@@ -48,9 +50,9 @@ export default function Lessons() {
     <div className="page">
       <div className="row spread" style={{ marginBottom: 8 }}>
         <div>
-          <h1>Your lessons {band.emoji}</h1>
+          <h1>{t('Your lessons')} {band.emoji}</h1>
           <p className="muted">
-            You're in the <strong>{band.name}</strong> band — {band.blurb}
+            {t("You're in the")} <strong>{t(band.name)}</strong> {t('band —')} {t(band.blurb)}
           </p>
         </div>
         <Buddy mood={doneInBand === myLessons.length && myLessons.length > 0 ? 'cheer' : 'happy'} size={100} float />
@@ -59,7 +61,7 @@ export default function Lessons() {
       <div className="card card-sky card-flat" style={{ marginBottom: 24 }}>
         <div className="row spread">
           <strong style={{ fontFamily: 'var(--font-display)' }}>
-            Band progress: {doneInBand} / {myLessons.length} lessons
+            {t('Band progress:')} {doneInBand} / {myLessons.length} {t('lessons')}
           </strong>
           <div className="progress-track" style={{ flex: 1, maxWidth: 320 }}>
             <div className="progress-fill" style={{ width: `${(doneInBand / Math.max(1, myLessons.length)) * 100}%` }} />
@@ -67,7 +69,7 @@ export default function Lessons() {
         </div>
         {doneInBand === myLessons.length && myLessons.length > 0 && (
           <p style={{ margin: '10px 0 0' }}>
-            🎉 You finished every lesson in your band! Peek at the next band below, or keep sharpening your skills on the Reading page.
+            {t('🎉 You finished every lesson in your band! Peek at the next band below, or keep sharpening your skills on the Reading page.')}
           </p>
         )}
       </div>
@@ -76,14 +78,14 @@ export default function Lessons() {
 
       <div style={{ marginTop: 32 }}>
         <button className="btn btn-sm" onClick={() => setShowAll((s) => !s)}>
-          {showAll ? 'Hide other bands' : '👀 Peek at other bands'}
+          {showAll ? t('Hide other bands') : t('👀 Peek at other bands')}
         </button>
         {showAll && (
           <div className="stack" style={{ marginTop: 16 }}>
             {BANDS.filter((b) => b.name !== band.name).map((b) => (
               <div key={b.name}>
                 <h2>
-                  {b.emoji} {b.name} band
+                  {b.emoji} {t(b.name)} {t('band')}
                 </h2>
                 <div className="grid grid-3">
                   {LESSONS.filter((l) => l.band === b.name).map((l) => renderLesson(l, b.min > band.min))}

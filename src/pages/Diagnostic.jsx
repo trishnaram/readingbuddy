@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { DIAGNOSTIC } from '../data/lessons'
 import { analyzeDiagnostic } from '../lib/llm'
 import { bandForLexile } from '../lib/lexile'
+import { useT } from '../context/TranslationContext'
 import Buddy from '../components/Buddy'
 import Confetti from '../components/Confetti'
 import { speak, stop } from '../lib/tts'
@@ -18,6 +19,7 @@ import { speak, stop } from '../lib/tts'
 export default function Diagnostic() {
   const { user, refreshProfile } = useAuth()
   const navigate = useNavigate()
+  const t = useT()
 
   const [stage, setStage] = useState('intro') // intro | quiz | saving | result
   const [passageIdx, setPassageIdx] = useState(0)
@@ -109,14 +111,14 @@ export default function Diagnostic() {
     return (
       <div className="page page-narrow center" style={{ paddingTop: 48 }}>
         <Buddy mood="happy" size={150} float />
-        <h1 className="anim-bounce-in">Let's find your perfect books! 🔎</h1>
+        <h1 className="anim-bounce-in">{t("Let's find your perfect books! 🔎")}</h1>
         <div className="card card-sky anim-bounce-in" style={{ textAlign: 'left', animationDelay: '0.1s' }}>
-          <p>Hi! I'm <strong>Buddy</strong>. Before we start, let's play a short reading game — <strong>4 mini stories</strong> with <strong>2 questions each</strong>.</p>
-          <p>Some will be easy, some might be tricky. That's on purpose! It helps me pick lessons and books that fit <em>you</em> just right.</p>
-          <p className="muted">There's no failing — every answer helps me learn about you. 💙</p>
+          <p>{t("Hi! I'm Buddy. Before we start, let's play a short reading game — 4 mini stories with 2 questions each.")}</p>
+          <p>{t("Some will be easy, some might be tricky. That's on purpose! It helps me pick lessons and books that fit you just right.")}</p>
+          <p className="muted">{t("There's no failing — every answer helps me learn about you. 💙")}</p>
         </div>
         <button className="btn btn-coral btn-lg anim-wiggle" style={{ marginTop: 20 }} onClick={() => setStage('quiz')}>
-          I'm ready! Let's go 🚀
+          {t("I'm ready! Let's go 🚀")}
         </button>
       </div>
     )
@@ -126,7 +128,7 @@ export default function Diagnostic() {
     return (
       <div className="page center" style={{ paddingTop: 120 }}>
         <Buddy mood="thinking" size={130} float />
-        <h2>Buddy is thinking about your answers…</h2>
+        <h2>{t('Buddy is thinking about your answers…')}</h2>
       </div>
     )
   }
@@ -137,16 +139,16 @@ export default function Diagnostic() {
       <div className="page page-narrow center" style={{ paddingTop: 48 }}>
         <Confetti trigger={celebrate} />
         <Buddy mood="cheer" size={150} />
-        <h1 className="anim-bounce-in">You're a {band.name}! {band.emoji}</h1>
+        <h1 className="anim-bounce-in">{t("You're a")} {t(band.name)}! {band.emoji}</h1>
         <div className="card card-lime anim-bounce-in" style={{ animationDelay: '0.1s' }}>
           <p style={{ fontSize: '1.2rem' }}>
-            Your reading level: <strong>about {result.lexile}L</strong>
+            {t('Your reading level:')} <strong>{t('about')} {result.lexile}L</strong>
           </p>
-          <p>{result.encouragement || band.blurb}</p>
-          <p className="muted">Your lessons and book picks are now tuned to your level. You can always grow to the next band!</p>
+          <p>{t(result.encouragement || band.blurb)}</p>
+          <p className="muted">{t('Your lessons and book picks are now tuned to your level. You can always grow to the next band!')}</p>
         </div>
         <button className="btn btn-coral btn-lg" style={{ marginTop: 20 }} onClick={() => navigate('/lessons')}>
-          Show me my lessons! 📚
+          {t('Show me my lessons! 📚')}
         </button>
       </div>
     )
@@ -155,7 +157,7 @@ export default function Diagnostic() {
   return (
     <div className="page page-narrow">
       <div className="row spread" style={{ marginBottom: 14 }}>
-        <span className="chip">Story {passageIdx + 1} of {DIAGNOSTIC.length}</span>
+        <span className="chip">{t('Story')} {passageIdx + 1} {t('of')} {DIAGNOSTIC.length}</span>
         <div className="progress-track" style={{ flex: 1, maxWidth: 300 }}>
           <div className="progress-fill" style={{ width: `${progress}%` }} />
         </div>
@@ -163,16 +165,16 @@ export default function Diagnostic() {
 
       <div className="card card-sky">
         <div className="row spread">
-          <h3 style={{ margin: 0 }}>📖 Read this little story</h3>
+          <h3 style={{ margin: 0 }}>{t('📖 Read this little story')}</h3>
           <button className="btn btn-sm btn-sky" onClick={() => speak(current.passage)}>
-            🔊 Read to me
+            {t('🔊 Read to me')}
           </button>
         </div>
-        <p className="reader-text" style={{ marginTop: 12 }}>{current.passage}</p>
+        <p className="reader-text" style={{ marginTop: 12 }}>{t(current.passage)}</p>
       </div>
 
       <div className="card anim-bounce-in" style={{ marginTop: 18 }} key={`${passageIdx}-${questionIdx}`}>
-        <p style={{ fontSize: '1.15rem', fontWeight: 700 }}>{question.question}</p>
+        <p style={{ fontSize: '1.15rem', fontWeight: 700 }}>{t(question.question)}</p>
         <div className="stack">
           {question.options.map((opt, i) => {
             let cls = 'btn'
@@ -183,14 +185,14 @@ export default function Diagnostic() {
             return (
               <button key={i} className={cls} style={{ width: '100%', justifyContent: 'flex-start' }} onClick={() => pick(i)}>
                 <span className="chip" style={{ minWidth: 34, justifyContent: 'center' }}>{String.fromCharCode(65 + i)}</span>
-                {opt}
+                {t(opt)}
               </button>
             )
           })}
         </div>
         {picked !== null && (
           <div className="row" style={{ marginTop: 16, justifyContent: 'flex-end' }}>
-            <button className="btn btn-coral" onClick={next}>Keep going →</button>
+            <button className="btn btn-coral" onClick={next}>{t('Keep going →')}</button>
           </div>
         )}
       </div>

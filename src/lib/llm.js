@@ -50,16 +50,24 @@ Based on this, respond with ONLY JSON in this shape (lexile is a number, band is
 }
 
 /**
- * Translate the whole Reading page (its UI labels plus the current
- * passage, in one call) into the target language. `uiStrings` is a flat
- * {key: englishText} map; the same keys come back translated.
+ * Translate a batch of arbitrary UI strings in one call. `strings` is a
+ * flat {key: englishText} map; the same keys come back translated. Used
+ * by TranslationContext to translate whatever text is on screen.
  */
-export async function translatePage(passage, uiStrings, language) {
-  const prompt = `Translate the JSON object below into ${language}, for a children's reading app. Translate every string value (both inside "ui" and "passage") — keep it natural and kid-friendly. Keep every key exactly the same. Respond with ONLY the translated JSON object, no other text, no markdown fences.
+export async function translateStrings(strings, language) {
+  const prompt = `Translate every string value in the JSON object below into ${language}, for a children's reading app. Keep it natural and kid-friendly. Leave any {placeholders} in curly braces unchanged. Keep every key exactly the same. Respond with ONLY the translated JSON object, no other text, no markdown fences.
 
-${JSON.stringify({ ui: uiStrings, passage })}`
+${JSON.stringify(strings)}`
   const text = await callLLM(prompt, { json: true, maxTokens: 4000 })
   return extractJSON(text)
+}
+
+/** Translate a single passage of reading text (no length cap). */
+export async function translatePassage(passage, language) {
+  const prompt = `Translate the following text into ${language}. Respond with ONLY the translation, nothing else.
+
+"""${passage}"""`
+  return callLLM(prompt, { maxTokens: 3000 })
 }
 
 /** Pull a lesson example from the student's current reading text. */

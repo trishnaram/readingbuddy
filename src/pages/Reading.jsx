@@ -1,39 +1,30 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useSettings } from '../context/SettingsContext'
+import { useT } from '../context/TranslationContext'
 import { supabase } from '../lib/supabase'
 import { searchBooks, fetchPassages } from '../lib/gutenberg'
-import { translatePage } from '../lib/llm'
+import { translatePassage } from '../lib/llm'
 import { bandByName } from '../lib/lexile'
 import { speak, stop } from '../lib/tts'
 import Buddy from '../components/Buddy'
-
-// English defaults for every translatable label on the open-book view.
-// Sent to the LLM alongside the passage so the whole page (not just the
-// text) switches language together. The Lessons page/feature is separate
-// and is never touched by this.
-const UI_STRINGS = {
-  backToLibrary: '← Back to library',
-  pick: 'pick',
-  part: 'Part',
-  of: 'of',
-  readAloud: '🔊 Read aloud',
-  stop: '⏹ Stop',
-  translate: '🌍 Translate',
-  previous: '← Previous',
-  next: 'Next →',
-  by: 'by',
-}
 
 /**
  * Pulls public-domain books (Project Gutenberg via Gutendex) matched to
  * the student's band, slices them into right-sized passages, and offers
  * read-aloud + translation. The current passage is stashed in
  * sessionStorage so lessons can teach from it.
+ *
+ * Every label on this page is auto-translated via the global `t()`
+ * (see TranslationContext) like the rest of the app. The one exception
+ * is the passage body itself: it stays in English and, on request, its
+ * translation is shown side by side rather than replacing it, so a
+ * student can compare the two.
  */
 export default function Reading() {
   const { user, profile } = useAuth()
   const { settings } = useSettings()
+  const t = useT()
   const band = bandByName(profile?.band ?? 'Explorer')
 
   const [books, setBooks] = useState([])
@@ -48,7 +39,6 @@ export default function Reading() {
 
   const [translation, setTranslation] = useState('')
   const [translating, setTranslating] = useState(false)
-  const [ui, setUi] = useState(UI_STRINGS)
 
   const loadBooks = async (q = '') => {
     setLoadingBooks(true)
@@ -75,7 +65,6 @@ export default function Reading() {
     setPassages([])
     setPageIdx(0)
     setTranslation('')
-    setUi(UI_STRINGS)
     stop()
     try {
       const chunks = await fetchPassages(b, band)
@@ -98,7 +87,6 @@ export default function Reading() {
   const changePage = (dir) => {
     stop()
     setTranslation('')
-    setUi(UI_STRINGS)
     setPageIdx((i) => {
       const next = Math.min(Math.max(0, i + dir), passages.length - 1)
       sessionStorage.setItem('rb-current-passage', passages[next])
@@ -113,9 +101,8 @@ export default function Reading() {
     }
     setTranslating(true)
     try {
-      const result = await translatePage(passages[pageIdx], UI_STRINGS, settings.language)
-      setTranslation(result.passage)
-      setUi({ ...UI_STRINGS, ...result.ui })
+      const result = await translatePassage(passages[pageIdx], settings.language)
+      setTranslation(result)
     } catch {
       setTranslation('Translation needs the LLM helper to be set up — ask a grown-up to deploy the Edge Function!')
     } finally {
@@ -127,24 +114,24 @@ export default function Reading() {
   if (book && passages.length > 0) {
     return (
       <div className={`page ${translation ? '' : 'page-narrow'}`}>
-        <button className="btn btn-sm" onClick={() => { setBook(null); stop() }}>{ui.backToLibrary}</button>
+        <button className="btn btn-sm" onClick={() => { setBook(null); stop() }}>{t('← Back to library')}</button>
 
         <div className="row spread" style={{ marginTop: 12 }}>
           <div>
-            <h1 style={{ marginBottom: 2 }}>{book.title}</h1>
-            <p className="muted" style={{ margin: 0 }}>{ui.by} {book.author}</p>
+            <h1 style={{ marginBottom: 2 }}>{t(book.title)}</h1>
+            <p className="muted" style={{ margin: 0 }}>{t('by')} {t(book.author)}</p>
           </div>
-          <span className="chip">{band.emoji} {band.name} {ui.pick}</span>
+          <span className="chip">{band.emoji} {t(band.name)} {t('pick')}</span>
         </div>
 
         <div className="card" style={{ marginTop: 16 }}>
           <div className="row spread" style={{ marginBottom: 10 }}>
-            <span className="chip chip-sky">{ui.part} {pageIdx + 1} {ui.of} {passages.length}</span>
+            <span className="chip chip-sky">{t('Part')} {pageIdx + 1} {t('of')} {passages.length}</span>
             <div className="row">
-              <button className="btn btn-sm btn-sky" onClick={() => speak(passages[pageIdx])}>{ui.readAloud}</button>
-              <button className="btn btn-sm" onClick={stop}>{ui.stop}</button>
+              <button className="btn btn-sm btn-sky" onClick={() => speak(passages[pageIdx])}>{t('🔊 Read aloud')}</button>
+              <button className="btn btn-sm" onClick={stop}>{t('⏹ Stop')}</button>
               <button className="btn btn-sm btn-pink" onClick={translate} disabled={translating}>
-                {translating ? 'Translating…' : `${ui.translate}${settings.language === 'English' ? '' : `: ${settings.language}`}`}
+                {translating ? t('Translating…') : `🌍 ${settings.language === 'English' ? t('Translate') : settings.language}`}
               </button>
             </div>
           </div>
@@ -162,14 +149,14 @@ export default function Reading() {
         </div>
 
         <div className="row spread" style={{ marginTop: 16 }}>
-          <button className="btn" onClick={() => changePage(-1)} disabled={pageIdx === 0}>{ui.previous}</button>
+          <button className="btn" onClick={() => changePage(-1)} disabled={pageIdx === 0}>{t('← Previous')}</button>
           <Buddy mood="happy" size={64} />
-          <button className="btn btn-coral" onClick={() => changePage(1)} disabled={pageIdx === passages.length - 1}>{ui.next}</button>
+          <button className="btn btn-coral" onClick={() => changePage(1)} disabled={pageIdx === passages.length - 1}>{t('Next →')}</button>
         </div>
 
         <div className="card card-lime card-flat center" style={{ marginTop: 20 }}>
           <p style={{ margin: 0 }}>
-            💡 Head to <strong>Lessons</strong> while this book is open — Buddy will teach using <em>this very story</em>!
+            {t('💡 Head to Lessons while this book is open — Buddy will teach using this very story!')}
           </p>
         </div>
       </div>
@@ -181,9 +168,9 @@ export default function Reading() {
     <div className="page">
       <div className="row spread">
         <div>
-          <h1>The Library 📚</h1>
+          <h1>{t('The Library 📚')}</h1>
           <p className="muted">
-            Books picked for the <strong>{band.name}</strong> band {band.emoji} — all free, from Project Gutenberg.
+            {t('Books picked for the')} <strong>{t(band.name)}</strong> {t('band')} {band.emoji} — {t('all free, from Project Gutenberg.')}
           </p>
         </div>
         <Buddy mood="happy" size={96} float />
@@ -197,20 +184,20 @@ export default function Reading() {
         <input
           className="input"
           style={{ maxWidth: 360 }}
-          placeholder="Search for animals, adventure, space…"
+          placeholder={t('Search for animals, adventure, space…')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search the library"
+          aria-label={t('Search the library')}
         />
-        <button className="btn btn-sun">🔍 Search</button>
+        <button className="btn btn-sun">{t('🔍 Search')}</button>
       </form>
 
-      {error && <div className="card card-pink card-flat" role="alert">{error}</div>}
+      {error && <div className="card card-pink card-flat" role="alert">{t(error)}</div>}
 
       {loadingBooks ? (
         <div className="center" style={{ paddingTop: 40 }}>
           <Buddy mood="thinking" size={110} float />
-          <h3>Buddy is browsing the shelves…</h3>
+          <h3>{t('Buddy is browsing the shelves…')}</h3>
         </div>
       ) : (
         <div className="grid grid-3">
@@ -228,8 +215,8 @@ export default function Reading() {
                   style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 12, border: '2.5px solid var(--ink)' }}
                 />
               )}
-              <h3 style={{ marginTop: 10 }}>{b.title.length > 60 ? b.title.slice(0, 57) + '…' : b.title}</h3>
-              <p className="muted" style={{ margin: 0 }}>{b.author}</p>
+              <h3 style={{ marginTop: 10 }}>{t(b.title.length > 60 ? b.title.slice(0, 57) + '…' : b.title)}</h3>
+              <p className="muted" style={{ margin: 0 }}>{t(b.author)}</p>
             </button>
           ))}
         </div>
@@ -238,7 +225,7 @@ export default function Reading() {
       {loadingText && (
         <div className="center" style={{ paddingTop: 30 }}>
           <Buddy mood="thinking" size={100} float />
-          <h3>Opening your book…</h3>
+          <h3>{t('Opening your book…')}</h3>
         </div>
       )}
     </div>

@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useT } from '../context/TranslationContext'
 import Buddy from '../components/Buddy'
 
 export default function Login() {
+  const t = useT()
   const [mode, setMode] = useState('signin') // 'signin' | 'signup'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -26,7 +28,7 @@ export default function Login() {
           options: { data: { username: username || email.split('@')[0] } },
         })
         if (error) throw error
-        setNotice('Account created! If email confirmation is on, check your inbox — otherwise you are signed in.')
+        setNotice(t('Account created! If email confirmation is on, check your inbox — otherwise you are signed in.'))
         navigate('/diagnostic')
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -34,7 +36,7 @@ export default function Login() {
         navigate('/lessons')
       }
     } catch (err) {
-      setError(err.message ?? 'Something went wrong')
+      setError(t(err.message ?? 'Something went wrong'))
     } finally {
       setBusy(false)
     }
@@ -48,7 +50,7 @@ export default function Login() {
           Reading<span style={{ color: 'var(--pink)' }}>Buddy</span>
         </h1>
         <p className="muted" style={{ fontSize: '1.1rem' }}>
-          Grow your reading superpowers, one story at a time. 🚀
+          {t('Grow your reading superpowers, one story at a time. 🚀')}
         </p>
       </div>
 
@@ -58,20 +60,20 @@ export default function Login() {
             className={`btn ${mode === 'signin' ? 'btn-sun' : 'btn-ghost'}`}
             onClick={() => setMode('signin')}
           >
-            Sign in
+            {t('Sign in')}
           </button>
           <button
             className={`btn ${mode === 'signup' ? 'btn-sun' : 'btn-ghost'}`}
             onClick={() => setMode('signup')}
           >
-            New reader? Join!
+            {t('New reader? Join!')}
           </button>
         </div>
 
         <form onSubmit={submit} className="stack">
           {mode === 'signup' && (
             <div>
-              <label htmlFor="username">What should Buddy call you?</label>
+              <label htmlFor="username">{t('What should Buddy call you?')}</label>
               <input
                 id="username"
                 className="input"
@@ -82,7 +84,7 @@ export default function Login() {
             </div>
           )}
           <div>
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t('Email')}</label>
             <input
               id="email"
               className="input"
@@ -94,7 +96,7 @@ export default function Login() {
             />
           </div>
           <div>
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('Password')}</label>
             <input
               id="password"
               className="input"
@@ -119,13 +121,13 @@ export default function Login() {
           )}
 
           <button className="btn btn-coral btn-lg" style={{ width: '100%', justifyContent: 'center' }} disabled={busy}>
-            {busy ? 'One moment…' : mode === 'signup' ? 'Start my adventure! 🎒' : 'Back to reading! 📖'}
+            {busy ? t('One moment…') : mode === 'signup' ? t('Start my adventure! 🎒') : t('Back to reading! 📖')}
           </button>
         </form>
       </div>
 
       <p className="center muted" style={{ marginTop: 20, fontSize: '0.9rem' }}>
-        New readers take a short placement adventure so lessons fit just right.
+        {t('New readers take a short placement adventure so lessons fit just right.')}
       </p>
     </div>
   )

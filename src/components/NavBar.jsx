@@ -1,10 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useT } from '../context/TranslationContext'
 import Buddy from './Buddy'
 
 export default function NavBar() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const t = useT()
 
   const handleSignOut = async () => {
     await signOut()
@@ -21,16 +23,16 @@ export default function NavBar() {
       </div>
       <div className="nav-links">
         <NavLink to="/lessons" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          📚 Lessons
+          📚 {t('Lessons')}
         </NavLink>
         <NavLink to="/reading" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          📖 Reading
+          📖 {t('Reading')}
         </NavLink>
         <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          ⭐ My Progress
+          ⭐ {t('My Progress')}
         </NavLink>
         <button className="btn btn-sm btn-ghost" onClick={handleSignOut}>
-          👋 Sign out{profile?.username ? `, ${profile.username}` : ''}
+          👋 {t('Sign out')}{profile?.username ? `, ${profile.username}` : ''}
         </button>
       </div>
     </nav>

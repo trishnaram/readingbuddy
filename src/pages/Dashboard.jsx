@@ -4,11 +4,13 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { bandByName, BANDS } from '../lib/lexile'
 import { LESSONS } from '../data/lessons'
+import { useT } from '../context/TranslationContext'
 import Buddy from '../components/Buddy'
 
 const SHELF_COLORS = ['var(--sky)', 'var(--pink)', 'var(--coral)', 'var(--sun)', 'var(--lime)']
 
 export default function Dashboard() {
+  const t = useT()
   const { user, profile } = useAuth()
   const [results, setResults] = useState([])
   const [progress, setProgress] = useState([])
@@ -42,8 +44,8 @@ export default function Dashboard() {
     <div className="page">
       <div className="row spread">
         <div>
-          <h1>Hi {profile?.username ?? 'reader'}! ⭐</h1>
-          <p className="muted">Here's how your reading adventure is going.</p>
+          <h1>{t('Hi')} {profile?.username ?? t('reader')}! ⭐</h1>
+          <p className="muted">{t("Here's how your reading adventure is going.")}</p>
         </div>
         <Buddy mood={avgScore >= 80 ? 'cheer' : 'happy'} size={100} float />
       </div>
@@ -52,28 +54,28 @@ export default function Dashboard() {
       <div className="grid grid-3" style={{ marginTop: 10 }}>
         <div className="card card-sky center">
           <div style={{ fontSize: '2.4rem' }}>{band.emoji}</div>
-          <h3>{band.name} band</h3>
-          <p className="muted" style={{ margin: 0 }}>~{profile?.lexile ?? '—'}L reading level</p>
+          <h3>{t(band.name)} {t('band')}</h3>
+          <p className="muted" style={{ margin: 0 }}>~{profile?.lexile ?? '—'}L {t('reading level')}</p>
         </div>
         <div className="card card-lime center">
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', fontWeight: 800 }}>
             {progress.length}
           </div>
-          <h3>Lessons completed</h3>
-          <p className="muted" style={{ margin: 0 }}>{doneInBand}/{bandLessons.length} in your band</p>
+          <h3>{t('Lessons completed')}</h3>
+          <p className="muted" style={{ margin: 0 }}>{doneInBand}/{bandLessons.length} {t('in your band')}</p>
         </div>
         <div className="card card-pink center">
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', fontWeight: 800 }}>
             {avgScore !== null ? `${avgScore}%` : '—'}
           </div>
-          <h3>Average quiz score</h3>
-          <p className="muted" style={{ margin: 0 }}>{lessonResults.length} quizzes taken</p>
+          <h3>{t('Average quiz score')}</h3>
+          <p className="muted" style={{ margin: 0 }}>{lessonResults.length} {t('quizzes taken')}</p>
         </div>
       </div>
 
       {/* journey through the bands */}
       <div className="card" style={{ marginTop: 20 }}>
-        <h2>Your reading journey 🗺️</h2>
+        <h2>{t('Your reading journey 🗺️')}</h2>
         <div className="row" style={{ gap: 8 }}>
           {BANDS.map((b, i) => (
             <div key={b.name} className="row" style={{ gap: 8 }}>
@@ -84,7 +86,7 @@ export default function Dashboard() {
                   opacity: i <= bandIdx ? 1 : 0.5,
                 }}
               >
-                {b.emoji} {b.name}
+                {b.emoji} {t(b.name)}
               </span>
               {i < BANDS.length - 1 && <span aria-hidden>→</span>}
             </div>
@@ -97,16 +99,16 @@ export default function Dashboard() {
           />
         </div>
         <p className="muted" style={{ marginBottom: 0 }}>
-          Finish your band's lessons with strong quiz scores to grow toward the next band!
+          {t("Finish your band's lessons with strong quiz scores to grow toward the next band!")}
         </p>
       </div>
 
       {/* bookshelf */}
       <div className="card" style={{ marginTop: 20 }}>
-        <h2>Your bookshelf 📚</h2>
+        <h2>{t('Your bookshelf 📚')}</h2>
         {uniqueBooks.length === 0 ? (
           <p className="muted">
-            No books yet — <Link to="/reading">open your first one</Link> and it'll appear here!
+            {t('No books yet —')} <Link to="/reading">{t('open your first one')}</Link> {t("and it'll appear here!")}
           </p>
         ) : (
           <>
@@ -115,7 +117,7 @@ export default function Dashboard() {
                 <div
                   key={b.id}
                   className="shelf-book"
-                  title={b.title}
+                  title={t(b.title)}
                   style={{
                     height: 55 + ((i * 17) % 30),
                     background: SHELF_COLORS[i % SHELF_COLORS.length],
@@ -125,7 +127,7 @@ export default function Dashboard() {
               ))}
             </div>
             <p className="muted" style={{ marginBottom: 0 }}>
-              {uniqueBooks.length} book{uniqueBooks.length === 1 ? '' : 's'} explored. Latest: <em>{uniqueBooks[0].title}</em>
+              {uniqueBooks.length} {uniqueBooks.length === 1 ? t('book') : t('books')} {t('explored. Latest:')} <em>{t(uniqueBooks[0].title)}</em>
             </p>
           </>
         )}
@@ -133,10 +135,10 @@ export default function Dashboard() {
 
       {/* recent quizzes */}
       <div className="card" style={{ marginTop: 20 }}>
-        <h2>Recent quizzes ✏️</h2>
+        <h2>{t('Recent quizzes ✏️')}</h2>
         {results.length === 0 ? (
           <p className="muted">
-            Take your first <Link to="/lessons">lesson quiz</Link> to see your scores here.
+            {t('Take your first')} <Link to="/lessons">{t('lesson quiz')}</Link> {t('to see your scores here.')}
           </p>
         ) : (
           <div className="stack">
@@ -146,7 +148,7 @@ export default function Dashboard() {
               return (
                 <div key={r.id} className="row spread" style={{ borderBottom: '2px dashed rgba(37,49,88,0.15)', paddingBottom: 8 }}>
                   <span>
-                    {r.kind === 'diagnostic' ? '🧭 Placement adventure' : `${lesson?.emoji ?? '✏️'} ${lesson?.skill ?? r.lesson_id}`}
+                    {r.kind === 'diagnostic' ? t('🧭 Placement adventure') : `${lesson?.emoji ?? '✏️'} ${t(lesson?.skill ?? r.lesson_id)}`}
                   </span>
                   <span className="row" style={{ gap: 10 }}>
                     <span className="muted" style={{ fontSize: '0.85rem' }}>

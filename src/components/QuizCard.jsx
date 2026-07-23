@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useT } from '../context/TranslationContext'
 import Buddy from './Buddy'
 import Confetti from './Confetti'
 
@@ -7,6 +8,7 @@ import Confetti from './Confetti'
  * feedback animations. Calls onFinish(score, total) at the end.
  */
 export default function QuizCard({ questions, onFinish, title = 'Quick Quiz' }) {
+  const t = useT()
   const [index, setIndex] = useState(0)
   const [picked, setPicked] = useState(null)   // option index the student chose
   const [score, setScore] = useState(0)
@@ -41,12 +43,12 @@ export default function QuizCard({ questions, onFinish, title = 'Quick Quiz' }) 
         <Confetti trigger={celebrate} />
         <Buddy mood={pct >= 60 ? 'cheer' : 'happy'} size={110} />
         <h2>
-          {pct >= 80 ? 'Amazing work! 🌟' : pct >= 60 ? 'Nice job! 🎉' : 'Good try! 💪'}
+          {pct >= 80 ? t('Amazing work! 🌟') : pct >= 60 ? t('Nice job! 🎉') : t('Good try! 💪')}
         </h2>
         <p style={{ fontSize: '1.2rem' }}>
-          You got <strong>{score}</strong> out of <strong>{questions.length}</strong> ({pct}%)
+          {t('You got')} <strong>{score}</strong> {t('out of')} <strong>{questions.length}</strong> ({pct}%)
         </p>
-        {pct < 60 && <p className="muted">Every champion reader practices. Review the lesson and try again!</p>}
+        {pct < 60 && <p className="muted">{t('Every champion reader practices. Review the lesson and try again!')}</p>}
       </div>
     )
   }
@@ -54,13 +56,13 @@ export default function QuizCard({ questions, onFinish, title = 'Quick Quiz' }) 
   return (
     <div className="card anim-bounce-in">
       <div className="row spread">
-        <h3 style={{ margin: 0 }}>{title}</h3>
+        <h3 style={{ margin: 0 }}>{t(title)}</h3>
         <span className="chip chip-sky">
           {index + 1} / {questions.length}
         </span>
       </div>
 
-      <p style={{ fontSize: '1.15rem', fontWeight: 700, marginTop: 16 }}>{q.question}</p>
+      <p style={{ fontSize: '1.15rem', fontWeight: 700, marginTop: 16 }}>{t(q.question)}</p>
 
       <div className="stack">
         {q.options.map((opt, i) => {
@@ -80,7 +82,7 @@ export default function QuizCard({ questions, onFinish, title = 'Quick Quiz' }) 
               <span className="chip" style={{ minWidth: 34, justifyContent: 'center' }}>
                 {String.fromCharCode(65 + i)}
               </span>
-              {opt}
+              {t(opt)}
             </button>
           )
         })}
@@ -90,10 +92,10 @@ export default function QuizCard({ questions, onFinish, title = 'Quick Quiz' }) 
         <div className="row spread" style={{ marginTop: 18 }}>
           <div className="row">
             <Buddy mood={isCorrect ? 'cheer' : 'thinking'} size={56} />
-            <strong>{isCorrect ? 'You got it!' : `Almost! The answer was ${String.fromCharCode(65 + q.answerIndex)}.`}</strong>
+            <strong>{isCorrect ? t('You got it!') : `${t('Almost! The answer was')} ${String.fromCharCode(65 + q.answerIndex)}.`}</strong>
           </div>
           <button className="btn btn-coral" onClick={next}>
-            {index + 1 >= questions.length ? 'See my score →' : 'Next question →'}
+            {index + 1 >= questions.length ? t('See my score →') : t('Next question →')}
           </button>
         </div>
       )}

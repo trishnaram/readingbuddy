@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useT } from '../context/TranslationContext'
 import Buddy from './Buddy'
 
 /**
@@ -10,12 +11,13 @@ import Buddy from './Buddy'
 export default function ProtectedRoute({ children, allowWithoutDiagnostic = false }) {
   const { session, profile, loading } = useAuth()
   const location = useLocation()
+  const t = useT()
 
   if (loading) {
     return (
       <div className="page center" style={{ paddingTop: 120 }}>
         <Buddy mood="thinking" size={130} float />
-        <h2>Loading your bookshelf…</h2>
+        <h2>{t('Loading your bookshelf…')}</h2>
       </div>
     )
   }

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { SettingsProvider } from './context/SettingsContext'
+import { TranslationProvider } from './context/TranslationContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import NavBar from './components/NavBar'
 import AccessibilityBar from './components/AccessibilityBar'
@@ -33,54 +34,56 @@ export default function App() {
   return (
     <AuthProvider>
       <SettingsProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
+        <TranslationProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
 
-            <Route
-              path="/diagnostic"
-              element={
-                <ProtectedRoute allowWithoutDiagnostic>
-                  <Diagnostic />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/lessons"
-              element={
-                <ProtectedRoute>
-                  <Shell><Lessons /></Shell>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/lessons/:lessonId"
-              element={
-                <ProtectedRoute>
-                  <Shell><LessonDetail /></Shell>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reading"
-              element={
-                <ProtectedRoute>
-                  <Shell><Reading /></Shell>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Shell><Dashboard /></Shell>
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
+              <Route
+                path="/diagnostic"
+                element={
+                  <ProtectedRoute allowWithoutDiagnostic>
+                    <Diagnostic />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/lessons"
+                element={
+                  <ProtectedRoute>
+                    <Shell><Lessons /></Shell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/lessons/:lessonId"
+                element={
+                  <ProtectedRoute>
+                    <Shell><LessonDetail /></Shell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reading"
+                element={
+                  <ProtectedRoute>
+                    <Shell><Reading /></Shell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Shell><Dashboard /></Shell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </TranslationProvider>
       </SettingsProvider>
     </AuthProvider>
   )
