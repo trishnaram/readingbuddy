@@ -49,12 +49,17 @@ Based on this, respond with ONLY JSON in this shape (lexile is a number, band is
   return extractJSON(text)
 }
 
-/** Translate a passage. */
-export async function translateText(passage, language) {
-  const prompt = `Translate the following text into ${language}. Respond with ONLY the translation, nothing else.
+/**
+ * Translate the whole Reading page (its UI labels plus the current
+ * passage, in one call) into the target language. `uiStrings` is a flat
+ * {key: englishText} map; the same keys come back translated.
+ */
+export async function translatePage(passage, uiStrings, language) {
+  const prompt = `Translate the JSON object below into ${language}, for a children's reading app. Translate every string value (both inside "ui" and "passage") — keep it natural and kid-friendly. Keep every key exactly the same. Respond with ONLY the translated JSON object, no other text, no markdown fences.
 
-"""${passage.slice(0, 4000)}"""`
-  return callLLM(prompt, { maxTokens: 2000 })
+${JSON.stringify({ ui: uiStrings, passage })}`
+  const text = await callLLM(prompt, { json: true, maxTokens: 4000 })
+  return extractJSON(text)
 }
 
 /** Pull a lesson example from the student's current reading text. */

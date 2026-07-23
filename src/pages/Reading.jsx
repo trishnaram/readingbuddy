@@ -3,10 +3,27 @@ import { useAuth } from '../context/AuthContext'
 import { useSettings } from '../context/SettingsContext'
 import { supabase } from '../lib/supabase'
 import { searchBooks, fetchPassages } from '../lib/gutenberg'
-import { translateText } from '../lib/llm'
+import { translatePage } from '../lib/llm'
 import { bandByName } from '../lib/lexile'
 import { speak, stop } from '../lib/tts'
 import Buddy from '../components/Buddy'
+
+// English defaults for every translatable label on the open-book view.
+// Sent to the LLM alongside the passage so the whole page (not just the
+// text) switches language together. The Lessons page/feature is separate
+// and is never touched by this.
+const UI_STRINGS = {
+  backToLibrary: '← Back to library',
+  pick: 'pick',
+  part: 'Part',
+  of: 'of',
+  readAloud: '🔊 Read aloud',
+  stop: '⏹ Stop',
+  translate: '🌍 Translate',
+  previous: '← Previous',
+  next: 'Next →',
+  by: 'by',
+}
 
 /**
  * Pulls public-domain books (Project Gutenberg via Gutendex) matched to
@@ -31,6 +48,7 @@ export default function Reading() {
 
   const [translation, setTranslation] = useState('')
   const [translating, setTranslating] = useState(false)
+  const [ui, setUi] = useState(UI_STRINGS)
 
   const loadBooks = async (q = '') => {
     setLoadingBooks(true)
@@ -57,6 +75,7 @@ export default function Reading() {
     setPassages([])
     setPageIdx(0)
     setTranslation('')
+    setUi(UI_STRINGS)
     stop()
     try {
       const chunks = await fetchPassages(b, band)
@@ -79,6 +98,7 @@ export default function Reading() {
   const changePage = (dir) => {
     stop()
     setTranslation('')
+    setUi(UI_STRINGS)
     setPageIdx((i) => {
       const next = Math.min(Math.max(0, i + dir), passages.length - 1)
       sessionStorage.setItem('rb-current-passage', passages[next])
@@ -93,8 +113,9 @@ export default function Reading() {
     }
     setTranslating(true)
     try {
-      const t = await translateText(passages[pageIdx], settings.language)
-      setTranslation(t)
+      const result = await translatePage(passages[pageIdx], UI_STRINGS, settings.language)
+      setTranslation(result.passage)
+      setUi({ ...UI_STRINGS, ...result.ui })
     } catch {
       setTranslation('Translation needs the LLM helper to be set up — ask a grown-up to deploy the Edge Function!')
     } finally {
@@ -105,43 +126,45 @@ export default function Reading() {
   /* ---------- book open view ---------- */
   if (book && passages.length > 0) {
     return (
-      <div className="page page-narrow">
-        <button className="btn btn-sm" onClick={() => { setBook(null); stop() }}>← Back to library</button>
+      <div className={`page ${translation ? '' : 'page-narrow'}`}>
+        <button className="btn btn-sm" onClick={() => { setBook(null); stop() }}>{ui.backToLibrary}</button>
 
         <div className="row spread" style={{ marginTop: 12 }}>
           <div>
             <h1 style={{ marginBottom: 2 }}>{book.title}</h1>
-            <p className="muted" style={{ margin: 0 }}>by {book.author}</p>
+            <p className="muted" style={{ margin: 0 }}>{ui.by} {book.author}</p>
           </div>
-          <span className="chip">{band.emoji} {band.name} pick</span>
+          <span className="chip">{band.emoji} {band.name} {ui.pick}</span>
         </div>
 
         <div className="card" style={{ marginTop: 16 }}>
           <div className="row spread" style={{ marginBottom: 10 }}>
-            <span className="chip chip-sky">Part {pageIdx + 1} of {passages.length}</span>
+            <span className="chip chip-sky">{ui.part} {pageIdx + 1} {ui.of} {passages.length}</span>
             <div className="row">
-              <button className="btn btn-sm btn-sky" onClick={() => speak(passages[pageIdx])}>🔊 Read aloud</button>
-              <button className="btn btn-sm" onClick={stop}>⏹ Stop</button>
+              <button className="btn btn-sm btn-sky" onClick={() => speak(passages[pageIdx])}>{ui.readAloud}</button>
+              <button className="btn btn-sm" onClick={stop}>{ui.stop}</button>
               <button className="btn btn-sm btn-pink" onClick={translate} disabled={translating}>
-                {translating ? 'Translating…' : `🌍 ${settings.language === 'English' ? 'Translate' : settings.language}`}
+                {translating ? 'Translating…' : `${ui.translate}${settings.language === 'English' ? '' : `: ${settings.language}`}`}
               </button>
             </div>
           </div>
 
-          <p className="reader-text">{passages[pageIdx]}</p>
+          <div className={translation ? 'translate-grid' : undefined}>
+            <p className="reader-text" style={{ margin: 0 }}>{passages[pageIdx]}</p>
 
-          {translation && (
-            <div className="card card-pink card-flat" style={{ marginTop: 14 }}>
-              <h3>🌍 In {settings.language}</h3>
-              <p className="reader-text">{translation}</p>
-            </div>
-          )}
+            {translation && (
+              <div className="card card-pink card-flat" style={{ margin: 0 }}>
+                <h3>🌍 {settings.language}</h3>
+                <p className="reader-text">{translation}</p>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="row spread" style={{ marginTop: 16 }}>
-          <button className="btn" onClick={() => changePage(-1)} disabled={pageIdx === 0}>← Previous</button>
+          <button className="btn" onClick={() => changePage(-1)} disabled={pageIdx === 0}>{ui.previous}</button>
           <Buddy mood="happy" size={64} />
-          <button className="btn btn-coral" onClick={() => changePage(1)} disabled={pageIdx === passages.length - 1}>Next →</button>
+          <button className="btn btn-coral" onClick={() => changePage(1)} disabled={pageIdx === passages.length - 1}>{ui.next}</button>
         </div>
 
         <div className="card card-lime card-flat center" style={{ marginTop: 20 }}>
