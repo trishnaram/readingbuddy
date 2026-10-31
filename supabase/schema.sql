@@ -77,3 +77,16 @@ create table if not exists public.reading_log (
 alter table public.reading_log enable row level security;
 create policy "own log select" on public.reading_log for select using (auth.uid() = user_id);
 create policy "own log insert" on public.reading_log for insert with check (auth.uid() = user_id);
+
+-- ============ LLM usage (rate limiting) ============
+-- Written only by the `llm` edge function with the service role key, so no
+-- client policies: RLS on with nothing granted means browsers can't touch it.
+create table if not exists public.llm_usage (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  created_at timestamptz default now()
+);
+
+alter table public.llm_usage enable row level security;
+create index if not exists llm_usage_user_time on public.llm_usage (user_id, created_at);
+create index if not exists llm_usage_time on public.llm_usage (created_at);
