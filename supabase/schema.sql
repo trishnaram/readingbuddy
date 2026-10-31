@@ -1,5 +1,6 @@
 -- ReadingBuddy schema
 -- Run this in the Supabase SQL editor (Dashboard -> SQL Editor -> New query -> paste -> Run)
+-- Safe to re-run: existing tables and data are kept, policies are recreated.
 
 -- ============ profiles ============
 create table if not exists public.profiles (
@@ -14,8 +15,11 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "read own profile" on public.profiles;
 create policy "read own profile"   on public.profiles for select using (auth.uid() = id);
+drop policy if exists "insert own profile" on public.profiles;
 create policy "insert own profile" on public.profiles for insert with check (auth.uid() = id);
+drop policy if exists "update own profile" on public.profiles;
 create policy "update own profile" on public.profiles for update using (auth.uid() = id);
 
 -- auto-create a profile row when a user signs up
@@ -46,7 +50,9 @@ create table if not exists public.lesson_progress (
 );
 
 alter table public.lesson_progress enable row level security;
+drop policy if exists "own progress select" on public.lesson_progress;
 create policy "own progress select" on public.lesson_progress for select using (auth.uid() = user_id);
+drop policy if exists "own progress insert" on public.lesson_progress;
 create policy "own progress insert" on public.lesson_progress for insert with check (auth.uid() = user_id);
 
 -- ============ quiz results ============
@@ -61,7 +67,9 @@ create table if not exists public.quiz_results (
 );
 
 alter table public.quiz_results enable row level security;
+drop policy if exists "own results select" on public.quiz_results;
 create policy "own results select" on public.quiz_results for select using (auth.uid() = user_id);
+drop policy if exists "own results insert" on public.quiz_results;
 create policy "own results insert" on public.quiz_results for insert with check (auth.uid() = user_id);
 
 -- ============ reading log ============
@@ -75,7 +83,9 @@ create table if not exists public.reading_log (
 );
 
 alter table public.reading_log enable row level security;
+drop policy if exists "own log select" on public.reading_log;
 create policy "own log select" on public.reading_log for select using (auth.uid() = user_id);
+drop policy if exists "own log insert" on public.reading_log;
 create policy "own log insert" on public.reading_log for insert with check (auth.uid() = user_id);
 
 -- ============ LLM usage (rate limiting) ============
