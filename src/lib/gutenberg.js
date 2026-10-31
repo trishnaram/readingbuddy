@@ -13,13 +13,60 @@ const SEARCH_TOPICS = {
   Champion: ['classic', 'literature', 'science fiction'],
 }
 
+/* ---------- content safety ---------- */
+
+// Subjects, bookshelves or titles matching any of these mean the whole book is hidden.
+const BLOCKED_BOOK_TERMS = [
+  'erotic', 'sex', 'sexual', 'pornograph', 'obscen', 'prostitut', 'courtesan', 'brothel',
+  'flagellation', 'sadism', 'masochism', 'fetish', 'venereal', 'contracepti',
+  'birth control', 'marriage manual', 'kama sutra', 'kamasutra', 'fanny hill',
+  'marquis de sade', 'libertine', 'decameron', 'heptameron', 'satyricon',
+  'rape', 'incest', 'torture', 'cannibal',
+]
+
+// Younger bands only see books catalogued as children's literature.
+const KID_TERMS = ['juvenile', 'children', 'fairy tales', 'nursery rhymes', 'picture books']
+const KID_ONLY_BANDS = ['Sprout', 'Explorer']
+
+// Passages containing any of these words are skipped.
+const BLOCKED_PASSAGE_WORDS = [
+  'fuck\\w*', 'shit\\w*', 'cunt\\w*', 'whore\\w*', 'slut\\w*', 'bastard\\w*', 'nigger\\w*',
+  'dick', 'cock', 'pussy', 'penis\\w*', 'vagina\\w*', 'breasts?', 'nipples?', 'naked',
+  'nude', 'sexual\\w*', 'sex', 'erotic\\w*', 'orgasm\\w*', 'rape[ds]?', 'raping',
+  'bosom', 'lust\\w*', 'harlot\\w*', 'prostitut\\w*', 'seduc\\w*', 'mistress\\w*',
+  'brothel\\w*', 'damn\\w*', 'goddam\\w*', 'hell', 'bloody',
+]
+const BLOCKED_PASSAGE_RE = new RegExp(`\\b(${BLOCKED_PASSAGE_WORDS.join('|')})\\b`, 'i')
+
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const BLOCKED_BOOK_RE = new RegExp(`\\b(${BLOCKED_BOOK_TERMS.map(escapeRe).join('|')})`, 'i')
+
+export function isQueryAllowed(query) {
+  return !BLOCKED_BOOK_RE.test(query) && !BLOCKED_PASSAGE_RE.test(query)
+}
+
+function isBookAllowed(book, band) {
+  const tags = [...(book.subjects || []), ...(book.bookshelves || [])].join(' | ')
+  if (BLOCKED_BOOK_RE.test(tags) || BLOCKED_BOOK_RE.test(book.title || '')) return false
+  if (KID_ONLY_BANDS.includes(band.name)) {
+    const lower = tags.toLowerCase()
+    if (!KID_TERMS.some((t) => lower.includes(t))) return false
+  }
+  return true
+}
+
+export function isPassageAllowed(text) {
+  return !BLOCKED_PASSAGE_RE.test(text)
+}
+
 export async function searchBooks(band, query = '') {
+  if (query && !isQueryAllowed(query)) return []
   const topic = query || SEARCH_TOPICS[band.name][0]
   const url = `https://gutendex.com/books?search=${encodeURIComponent(topic)}&languages=en&mime_type=text%2Fplain`
   const res = await fetch(url)
   if (!res.ok) throw new Error('Book search failed')
   const data = await res.json()
-  return (data.results || []).slice(0, 12).map((b) => ({
+  return (data.results || []).filter((b) => isBookAllowed(b, band)).slice(0, 12).map((b) => ({
     id: b.id,
     title: b.title,
     author: b.authors?.[0]?.name ?? 'Unknown author',
@@ -65,6 +112,12 @@ export async function fetchPassages(book, band, maxPassages = 8) {
   let current = []
   let words = 0
   for (const p of paragraphs) {
+    if (!isPassageAllowed(p)) {
+      // drop the whole in-progress passage so it doesn't read with a gap
+      current = []
+      words = 0
+      continue
+    }
     current.push(p)
     words += p.split(/\s+/).length
     if (words >= 220) {
